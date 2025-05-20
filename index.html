@@ -1,0 +1,130 @@
+// 👑 x5BOT Binance Alpha 自動交易腳本 v1.3 隨機延遲
+
+let value = 8;          // 每次買入金額
+let runtime = 10;       // 執行次數
+let customize = 0.1;    // 自訂滑點設定
+
+// 每一步驟的隨機延遲範圍（毫秒）：[min, max]
+const stepDelay = {
+  點擊買入tab: [1500, 2500],
+  設定金額: [1000, 1500],
+  設定滑點: [1000, 2000],
+  點擊買入: [1000, 2000],
+  確認買入: [2000, 3000],
+  點擊出售tab: [1500, 2500],
+  滑桿100: [1000, 2000],
+  設定滑點_賣: [1000, 2000],
+  點擊出售: [1000, 2000],
+  確認出售: [2000, 3000],
+};
+
+// 隨機延遲函數
+const randomDelay = ([min, max]) => {
+  const ms = Math.floor(Math.random() * (max - min + 1)) + min;
+  console.log(`[x5BOT] 等待 ${ms}ms...`);
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+// 模擬點擊按鈕
+const simulateClick = (element, label = '按鈕') => {
+  if (!element) return console.error(`[錯誤] 找不到 ${label}`);
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  console.log(`[x5BOT] ✅ 點擊 ${label}`);
+  return true;
+};
+
+// 設定輸入值（兼容 React）
+const setInputValue = (el, val) => {
+  if (!el) return console.error(`[錯誤] 找不到輸入框`);
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  nativeSetter.call(el, val);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  console.log(`[x5BOT] ✅ 設定輸入值: ${val}`);
+  return true;
+};
+
+// 點擊包含指定文字的按鈕
+const clickButtonByText = (text) => {
+  const btns = [...document.querySelectorAll('button')];
+  const target = btns.find(b => b.innerText.includes(text));
+  return simulateClick(target, `按鈕（${text}）`);
+};
+
+// 點選 tab（買入/賣出）
+const clickTab = (text) => {
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const tab = tabs.find(t => t.innerText.includes(text));
+  return simulateClick(tab, `Tab（${text}）`);
+};
+
+// 點擊滑點設定的「自定義」並輸入
+const setSlippage = async () => {
+  const divs = [...document.querySelectorAll('div')];
+  const trigger = divs.find(d => d.innerText.includes('滑點') && d.className.includes('cursor-pointer'));
+  simulateClick(trigger, '滑點設定開啟');
+  await randomDelay([500, 1000]);
+
+  const option = divs.find(d => d.innerText.includes('自定義'));
+  simulateClick(option, '滑點選單：自定義');
+  await randomDelay([500, 1000]);
+
+  const input = document.querySelector('#customize-slippage');
+  if (!setInputValue(input, customize)) {
+    console.warn('[警告] 無法設定滑點');
+  }
+
+  await randomDelay([500, 1000]);
+  clickButtonByText('確認');
+};
+
+// 單輪交易執行
+const runOneTrade = async (round) => {
+  console.log(`\n🎯 [x5BOT] 🚀 開始第 ${round} 筆交易`);
+
+  clickTab('買入');
+  await randomDelay(stepDelay['點擊買入tab']);
+
+  const input = document.querySelector('#fromCoinAmount');
+  setInputValue(input, value);
+  await randomDelay(stepDelay['設定金額']);
+
+  await setSlippage();
+  await randomDelay(stepDelay['設定滑點']);
+
+  clickButtonByText('買入');
+  await randomDelay(stepDelay['點擊買入']);
+
+  clickButtonByText('確認');
+  await randomDelay(stepDelay['確認買入']);
+
+  clickTab('出售');
+  await randomDelay(stepDelay['點擊出售tab']);
+
+  const slider = document.querySelector('input[role="slider"]');
+  setInputValue(slider, '100');
+  await randomDelay(stepDelay['滑桿100']);
+
+  await setSlippage();
+  await randomDelay(stepDelay['設定滑點_賣']);
+
+  clickButtonByText('出售');
+  await randomDelay(stepDelay['點擊出售']);
+
+  clickButtonByText('確認');
+  console.log(`✅ [x5BOT] 第 ${round} 筆交易完成 🎉`);
+  await randomDelay(stepDelay['確認出售']);
+};
+
+// 主交易迴圈
+const runTradeLoop = async () => {
+  for (let i = 1; i <= runtime; i++) {
+    try {
+      await runOneTrade(i);
+    } catch (e) {
+      console.error(`[錯誤] 第 ${i} 筆交易失敗：${e.message}`);
+    }
+  }
+  console.log('\n🏁 [x5BOT] 所有交易執行完畢！任務完成 🏆');
+};
+
+runTradeLoop();
