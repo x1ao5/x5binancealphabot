@@ -1,20 +1,17 @@
 // x5BinanceAlphaBOTv1.3
 
-let value = 70;          // 每次買入金額
-let runtime = 10;       // 執行次數
-let customize = 0.1;    // 自訂滑點設定
+let value = 50;          // 每次買入金額
+let runtime = 3;       // 執行次數
 
 // 每一步驟的隨機延遲範圍（毫秒）：[min, max]
 const stepDelay = {
-  點擊買入tab: [3000, 3500],
-  設定金額: [2500, 3000],
-  設定滑點: [1500, 1500],
-  點擊買入: [2000, 3000],
+  點擊買入tab: [10000, 13500],
+  設定金額: [2700, 3500],
+  點擊買入: [1500, 2000],
   確認買入: [1500, 2000],
-  點擊出售tab: [3000, 3500],
-  滑桿100: [2500, 2700],
-  設定滑點_賣: [1500, 1500],
-  點擊出售: [2000, 3000],
+  點擊出售tab: [3400, 3500],
+  滑桿100: [3000, 3200],
+  點擊出售: [1500, 2000],
   確認出售: [1500, 2000],
 };
 
@@ -57,26 +54,6 @@ const clickTab = (text) => {
   return simulateClick(tab, `Tab（${text}）`);
 };
 
-// 點擊滑點設定的「自定義」並輸入
-const setSlippage = async () => {
-  const divs = [...document.querySelectorAll('div')];
-  const trigger = divs.find(d => d.innerText.includes('滑點') && d.className.includes('cursor-pointer'));
-  simulateClick(trigger, '滑點設定開啟');
-  await randomDelay([500, 1000]);
-
-  const option = divs.find(d => d.innerText.includes('自定義'));
-  simulateClick(option, '滑點選單：自定義');
-  await randomDelay([500, 1000]);
-
-  const input = document.querySelector('#customize-slippage');
-  if (!setInputValue(input, customize)) {
-    console.warn('[警告] 無法設定滑點');
-  }
-
-  await randomDelay([500, 1000]);
-  clickButtonByText('確認');
-};
-
 // 單輪交易執行
 const runOneTrade = async (round) => {
   console.log(`\n🎯 [x5BOT] 🚀 開始第 ${round} 筆交易`);
@@ -87,9 +64,6 @@ const runOneTrade = async (round) => {
   const input = document.querySelector('#fromCoinAmount');
   setInputValue(input, value);
   await randomDelay(stepDelay['設定金額']);
-
-  await setSlippage();
-  await randomDelay(stepDelay['設定滑點']);
 
   clickButtonByText('買入');
   await randomDelay(stepDelay['點擊買入']);
@@ -103,9 +77,6 @@ const runOneTrade = async (round) => {
   const slider = document.querySelector('input[role="slider"]');
   setInputValue(slider, '100');
   await randomDelay(stepDelay['滑桿100']);
-
-  await setSlippage();
-  await randomDelay(stepDelay['設定滑點_賣']);
 
   clickButtonByText('出售');
   await randomDelay(stepDelay['點擊出售']);
